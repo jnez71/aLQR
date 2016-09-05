@@ -5,8 +5,8 @@ import numpy.linalg as npl
 from matplotlib import pyplot as plt
 import matplotlib.animation as ani
 
-from aLQR.cost_field import Cost_Field
-from aLQR.alqr_planner import ALQR_Planner
+from alqr.cost_field import Cost_Field
+from alqr.alqr_planner import ALQR_Planner
 
 
 # Hmm let's try a linear system with two positional

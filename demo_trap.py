@@ -5,8 +5,8 @@ import numpy.linalg as npl
 from matplotlib import pyplot as plt
 import matplotlib.animation as ani
 
-from aLQR.cost_field import Cost_Field
-from aLQR.alqr_planner import ALQR_Planner
+from alqr.cost_field import Cost_Field
+from alqr.alqr_planner import ALQR_Planner
 
 
 # Basic linear particle
@@ -35,38 +35,43 @@ def dynamics(x, u):
 	return A.dot(x) + B.dot(u)
 
 
-# Create arbitrary state cost function that produces desired valley path
-goal = [1, 0.5, 0, 0]
-valley_intensity = 100
-def valley(x):
-	x = np.array(x)
-	goal_error = goal - x
-	c = 3 * np.sum(goal_error**4)
-	upper_limit = 0.4*np.sin(4*np.pi * x[0]) + 0.01 + 0.5
-	lower_limit = 0.4*np.sin(4*np.pi * x[0]) - 0.01 + 0.5
-	if x[1] >= upper_limit:
-		c = c + valley_intensity*(x[1] - upper_limit)**2
-	elif x[1] <= lower_limit:
-		c = c + valley_intensity*(x[1]- lower_limit)**2
-	else:
-		c = c + 0
-	return c
-
-
 # Set up a cost field
+goal = [1, 1, 0, 0]
 cost_field = Cost_Field(nstates, ncontrols, goal,
-						goal_weight=0, obstacle_weight=0, effort_weight=0.05,
-						arb_state_cost=valley, demo_plots=True)
+						goal_weight=2, obstacle_weight=1, effort_weight=0.3)
+
+# Non-convex "trap" of obstacles
+cost_field.add_obstacle('corner', [0.7, 0.7], 0.2)
+cost_field.add_obstacle('left1', [0.65, 0.7], 0.2)
+cost_field.add_obstacle('left2', [0.6, 0.7], 0.2)
+cost_field.add_obstacle('left3', [0.55, 0.7], 0.2)
+cost_field.add_obstacle('left4', [0.5, 0.7], 0.2)
+cost_field.add_obstacle('left5', [0.45, 0.7], 0.2)
+cost_field.add_obstacle('left6', [0.4, 0.7], 0.2)
+# cost_field.add_obstacle('left7', [0.35, 0.7], 0.2)
+# cost_field.add_obstacle('left8', [0.3, 0.7], 0.2)
+# cost_field.add_obstacle('left9', [0.25, 0.7], 0.2)
+cost_field.add_obstacle('down1', [0.7, 0.65], 0.2)
+cost_field.add_obstacle('down2', [0.7, 0.6], 0.2)
+cost_field.add_obstacle('down3', [0.7, 0.55], 0.2)
+cost_field.add_obstacle('down4', [0.7, 0.5], 0.2)
+cost_field.add_obstacle('down5', [0.7, 0.45], 0.2)
+cost_field.add_obstacle('down6', [0.7, 0.4], 0.2)
+# cost_field.add_obstacle('down7', [0.7, 0.35], 0.2)
+# cost_field.add_obstacle('down8', [0.7, 0.3], 0.2)
+# cost_field.add_obstacle('down9', [0.7, 0.25], 0.2)
+
 
 # Associate an alqr planner
-planning_horizon = 20  # s
+planning_horizon = 10  # s
 planning_resolution = 0.01  # s
 alqr = ALQR_Planner(dynamics, linearize, cost_field,
-							 planning_horizon, planning_resolution)
+					planning_horizon, planning_resolution,
+					demo_plots=True)
 
 
 # Initial condition and time
-x = [0, 0.6, 0, 0]
+x = [0, 0.05, 0, 0]
 dt = planning_resolution  # convenient to use in sim testing too
 t_arr = np.arange(0, planning_horizon, dt)
 framerate = 30
@@ -158,8 +163,8 @@ ax2.set_ylabel('- Position 2 +')
 ax2.grid(True)
 
 radius = 0.02
-xlim = (min(np.concatenate((x_history[:, 0], [0])))*1.1 - radius, max(np.concatenate((x_history[:, 0], [1])))*1.1 + radius)
-ylim = (min(np.concatenate((x_history[:, 1], [0])))*1.1 - radius, max(np.concatenate((x_history[:, 1], [1])))*1.1 + radius)
+xlim = (min(x_history[:, 0])*1.1 - radius, max(x_history[:, 0])*1.1 + radius)
+ylim = (min(x_history[:, 1])*1.1 - radius, max(x_history[:, 1])*1.1 + radius)
 ax2.set_xlim(xlim)
 ax2.set_ylim(ylim)
 
