@@ -5,8 +5,7 @@ import numpy.linalg as npl
 from matplotlib import pyplot as plt
 import matplotlib.animation as ani
 
-from alqr.cost_field import Cost_Field
-from alqr.alqr_planner import ALQR_Planner
+import alqr
 
 
 # Basic linear particle
@@ -37,8 +36,8 @@ def dynamics(x, u):
 
 # Set up a cost field
 goal = [1, 1, 0, 0]
-cost_field = Cost_Field(nstates, ncontrols, goal,
-						goal_weight=2, obstacle_weight=1, effort_weight=0.3)
+cost_field = alqr.Cost_Field(nstates, ncontrols, goal,
+							 goal_weight=2, obstacle_weight=1, effort_weight=0.3)
 
 # Non-convex "trap" of obstacles
 cost_field.add_obstacle('corner', [0.7, 0.7], 0.2)
@@ -65,9 +64,9 @@ cost_field.add_obstacle('down6', [0.7, 0.4], 0.2)
 # Associate an alqr planner
 planning_horizon = 10  # s
 planning_resolution = 0.01  # s
-alqr = ALQR_Planner(dynamics, linearize, cost_field,
-					planning_horizon, planning_resolution,
-					demo_plots=True)
+planner = alqr.Planner(dynamics, linearize, cost_field,
+					   planning_horizon, planning_resolution,
+					   demo_plots=True)
 
 
 # Initial condition and time
@@ -78,7 +77,7 @@ framerate = 30
 show_cost_field = True
 
 # Plan a path from these initial conditions
-alqr.update_plan(x)
+planner.update_plan(x)
 
 
 # Preallocate results memory
@@ -92,8 +91,8 @@ c_history = np.zeros(len(t_arr))
 for i, t in enumerate(t_arr):
 
 	# Planner's decision
-	u = alqr.u_seq[i, :]
-	# u = alqr.get_effort(t)
+	u = planner.u_seq[i, :]
+	# u = planner.get_effort(t)
 
 	# Record this instant
 	x_history[i, :] = x

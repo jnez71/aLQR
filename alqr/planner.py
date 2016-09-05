@@ -17,7 +17,7 @@ from cost_field import Cost_Field
 
 ################################################# PRIMARY CLASS
 
-class ALQR_Planner:
+class Planner:
 	"""
 	Instances must be initialized with a dynamics function, 
 	a linearize function, a cost_field, a planning horizon and resolution.

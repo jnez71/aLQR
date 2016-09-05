@@ -5,8 +5,7 @@ import numpy.linalg as npl
 from matplotlib import pyplot as plt
 import matplotlib.animation as ani
 
-from alqr.cost_field import Cost_Field
-from alqr.alqr_planner import ALQR_Planner
+import alqr
 
 
 # Basic linear particle
@@ -54,16 +53,16 @@ def valley(x):
 
 
 # Set up a cost field
-cost_field = Cost_Field(nstates, ncontrols, goal,
-						goal_weight=0, obstacle_weight=0, effort_weight=0.05,
-						arb_state_cost=valley)
+cost_field = alqr.Cost_Field(nstates, ncontrols, goal,
+							 goal_weight=0, obstacle_weight=0, effort_weight=0.05,
+							 arb_state_cost=valley)
 
 # Associate an alqr planner
 planning_horizon = 20  # s
 planning_resolution = 0.01  # s
-alqr = ALQR_Planner(dynamics, linearize, cost_field,
-					planning_horizon, planning_resolution,
-					demo_plots=True)
+planner = alqr.Planner(dynamics, linearize, cost_field,
+					   planning_horizon, planning_resolution,
+					   demo_plots=True)
 
 
 # Initial condition and time
@@ -74,7 +73,7 @@ framerate = 30
 show_cost_field = True
 
 # Plan a path from these initial conditions
-alqr.update_plan(x)
+planner.update_plan(x)
 
 
 # Preallocate results memory
@@ -88,8 +87,8 @@ c_history = np.zeros(len(t_arr))
 for i, t in enumerate(t_arr):
 
 	# Planner's decision
-	u = alqr.u_seq[i, :]
-	# u = alqr.get_effort(t)
+	u = planner.u_seq[i, :]
+	# u = planner.get_effort(t)
 
 	# Record this instant
 	x_history[i, :] = x
