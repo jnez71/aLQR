@@ -27,7 +27,8 @@ class Cost_Field:
 	nstates: the dimensionality of the state space
 	ncontrols: the dimensionality of the effort space
 	goal0: the initial goal state
-	goal_weight: scalar in cost function (goal_weight * goal_error^2)
+	position_weight: scalar in cost function (position_weight * position_error^2)
+	velocity_weight: scalar in cost function (velocity_weight * velocity_error^2)
 	obstacle_weight: scalar in cost function (obstacle_weight * obstacle_nearness^2)
 	effort_weight: scalar in cost function (effort_weight * effort^2)
 	umin and umax: arrays of minimum and maximum allowable actuator efforts (default: no limits)
@@ -37,7 +38,8 @@ class Cost_Field:
 
 	"""
 	def __init__(self, nstates, ncontrols, goal0,
-				 goal_weight, obstacle_weight, effort_weight,
+				 position_weight, velocity_weight,
+				 obstacle_weight, effort_weight,
 				 umin=None, umax=None, strictness=100,
 				 arb_state_cost=None, arb_effort_cost=None):
 		# Dimensionality
@@ -46,7 +48,7 @@ class Cost_Field:
 
 		# Get your goals in order and your priorities straight
 		self.set_goal(goal0)
-		self.set_weights(goal_weight, obstacle_weight, effort_weight)
+		self.set_weights(position_weight, velocity_weight, obstacle_weight, effort_weight)
 		self.reset_obstacles()
 
 		# Initialize and then set limits
@@ -71,7 +73,7 @@ class Cost_Field:
 		# Distance from goal
 		goal_error = self.goal - x
 		# Upwards quadratic, centered at goal
-		c_goal = self.goal_weight * goal_error.dot(goal_error)
+		c_goal = (self.goal_weight * goal_error).dot(goal_error)
 		# Find which obstacles we are in the region of influence of
 		if len(self.obstacle_ids):
 			distances = np.array([npl.norm(self.obstacle_positions - x[:int(self.nstates/2)], axis=1)]).T
@@ -195,27 +197,38 @@ class Cost_Field:
 			raise ValueError("The goal must be a state vector (with nstates elements).")
 
 
-	def set_weights(self, goal_weight=None, obstacle_weight=None, effort_weight=None):
+	def set_weights(self, position_weight=None, velocity_weight=None, obstacle_weight=None, effort_weight=None):
 		"""
 		Use to modify the scalar weights for the various influences on behavior.
 		Weights that aren't given aren't changed.
 
 		"""
-		if goal_weight is not None:
-			if type(goal_weight) in [int, float]:
-				self.goal_weight = goal_weight
+		if position_weight is not None:
+			if type(position_weight) in [int, float]:
+				self.position_weight = float(position_weight)
 			else:
-				raise ValueError("The goal_weight must be a scalar.")
+				raise ValueError("The position_weight must be a scalar.")
+
+		if velocity_weight is not None:
+			if type(velocity_weight) in [int, float]:
+				self.velocity_weight = float(velocity_weight)
+			else:
+				raise ValueError("The velocity_weight must be a scalar.")
+
+		self.goal_weight = np.concatenate((
+										   self.position_weight * np.ones(int(self.nstates/2)),
+										   self.velocity_weight * np.ones(int(self.nstates/2))
+										 ))
 
 		if obstacle_weight is not None:
 			if type(obstacle_weight) in [int, float]:
-				self.obstacle_weight = obstacle_weight
+				self.obstacle_weight = float(obstacle_weight)
 			else:
 				raise ValueError("The obstacle_weight must be a scalar.")
 
 		if effort_weight is not None:
-			if type(goal_weight) in [int, float]:
-				self.effort_weight = effort_weight
+			if type(effort_weight) in [int, float]:
+				self.effort_weight = float(effort_weight)
 			else:
 				raise ValueError("The effort_weight must be a scalar")
 

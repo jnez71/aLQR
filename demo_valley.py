@@ -54,7 +54,8 @@ def valley(x):
 
 # Set up a cost field
 cost_field = alqr.Cost_Field(nstates, ncontrols, goal,
-							 goal_weight=0, obstacle_weight=0, effort_weight=0.05,
+							 position_weight=0, velocity_weight=0,
+							 obstacle_weight=0, effort_weight=0.05,
 							 arb_state_cost=valley)
 
 # Associate an alqr planner

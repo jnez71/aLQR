@@ -37,7 +37,8 @@ def dynamics(x, u):
 # Set up a cost field
 goal = [1, 1, 0, 0]
 cost_field = alqr.Cost_Field(nstates, ncontrols, goal,
-							 goal_weight=2, obstacle_weight=1, effort_weight=0.3)
+							 position_weight=2, velocity_weight=2,
+							 obstacle_weight=1, effort_weight=0.3)
 
 # Non-convex "trap" of obstacles
 cost_field.add_obstacle('corner', [0.7, 0.7], 0.2)
