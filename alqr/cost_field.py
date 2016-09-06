@@ -61,8 +61,10 @@ class Cost_Field:
 		self.arb_effort_cost = lambda u: 0
 		self.set_arb_costs(arb_state_cost, arb_effort_cost)
 
-		# Finite difference delta size
+		# Finite difference delta size and gradient functions
 		self.eps = (np.finfo(float).eps)**0.5
+		self.state_cost_gradient = lambda x: approx_fprime(x, self.state_cost, self.eps)
+		self.effort_cost_gradient = lambda u: approx_fprime(u, self.effort_cost, self.eps)
 
 
 	def state_cost(self, x):
@@ -99,22 +101,6 @@ class Cost_Field:
 			elif eff <= self.umin[i]:
 				c = c + self.strictness*(eff - self.umin[i])**2
 		return c + self.arb_effort_cost(u)
-
-
-	def state_cost_gradient(self, x):
-		"""
-		Computes the gradient of the state-space cost field at state x.
-
-		"""
-		return approx_fprime(x, self.state_cost, self.eps)
-
-
-	def effort_cost_gradient(self, u):
-		"""
-		Computes the gradient of the effort-space cost field at actuation u.
-
-		"""
-		return approx_fprime(u, self.effort_cost, self.eps)
 
 
 	def state_cost_hessian(self, x):
