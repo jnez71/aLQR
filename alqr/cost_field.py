@@ -26,6 +26,7 @@ class Cost_Field:
 	---
 	nstates: the dimensionality of the state space
 	ncontrols: the dimensionality of the effort space
+	nobstates: the dimensionality of "obstacles"
 	goal0: the initial goal state
 	position_weight: scalar in cost function (position_weight * position_error^2)
 	velocity_weight: scalar in cost function (velocity_weight * velocity_error^2)
@@ -37,7 +38,7 @@ class Cost_Field:
 			   (must take state or effort as argument respectively and return a scalar cost)
 
 	"""
-	def __init__(self, nstates, ncontrols, goal0,
+	def __init__(self, nstates, ncontrols, nobstates, goal0,
 				 position_weight, velocity_weight,
 				 obstacle_weight, effort_weight,
 				 umin=None, umax=None, strictness=100,
@@ -45,6 +46,7 @@ class Cost_Field:
 		# Dimensionality
 		self.nstates = int(nstates)
 		self.ncontrols = int(ncontrols)
+		self.nobstates = int(nobstates)
 
 		# Get your goals in order and your priorities straight
 		self.set_goal(goal0)
@@ -78,7 +80,7 @@ class Cost_Field:
 		c_goal = (self.goal_weight * goal_error).dot(goal_error)
 		# Find which obstacles we are in the region of influence of
 		if len(self.obstacle_ids):
-			distances = np.array([npl.norm(self.obstacle_positions - x[:int(self.nstates/2)], axis=1)]).T
+			distances = np.array([npl.norm(self.obstacle_positions - x[:self.nobstates], axis=1)]).T
 			contributors = (distances <= self.obstacle_rois)
 			# Apply cosine hump and arbitrary user-defined cost
 			c_obs = np.sum((self.obstacle_weight*(np.cos((distances/self.obstacle_rois)*np.pi)+1)/2)[contributors])

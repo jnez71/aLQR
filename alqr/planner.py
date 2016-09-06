@@ -44,17 +44,20 @@ class Planner:
 	The maximum iteration number for planning and convergence criteria can also
 	be set. The convergence criteria is for the cost drop between iterations.
 
+	The initial alpha (the umph of the optimizer) can be made <1 if
+	the problem is known to be pretty stiff and/or high order.
+
 	Setting demo_plots to True will import matplotlib and plot all the
 	trajectory iterations on the first call of update_plan. FOR DEMOS ONLY.
 
 	"""
 	def __init__(self, dynamics, linearize, cost_field,
 				 planning_horizon, planning_resolution,
-				 max_iter=100, eps_converge=0.005,
+				 max_iter=100, eps_converge=0.005, alpha0=1,
 				 demo_plots = False):
 		self.set_dynamics(dynamics, linearize)
 		self.set_cost_field(cost_field)
-		self.set_planning_params(planning_horizon, planning_resolution, max_iter, eps_converge)
+		self.set_planning_params(planning_horizon, planning_resolution, max_iter, eps_converge, alpha0)
 		self.demo_plots = demo_plots
 		if demo_plots:
 			self.plot_setup()
@@ -158,7 +161,12 @@ class Planner:
 
 				# Calculate Q_uu^-1 with regularization term set by 
 				# Levenberg-Marquardt heuristic (at end of this loop)
-				Q_uu_evals, Q_uu_evecs = npl.eig(Q_uu)
+				try:
+					Q_uu_evals, Q_uu_evecs = npl.eig(Q_uu)
+				except npl.LinAlgError:
+					print("Broken Q_uu, terminating diverged iteration!")
+					break
+
 				Q_uu_evals[Q_uu_evals < 0] = 0.0
 				Q_uu_evals += lamb
 				Q_uu_inv = np.dot(Q_uu_evecs, 
@@ -187,7 +195,7 @@ class Planner:
 				# calculated from our value function approximation
 				# to take a stab at the optimal control sequence
 				# (evaluate the new sequence along the way)
-				Unew[i] = self.u_seq[i] + k[i] + np.dot(K[i], xnew - self.x_seq[i]) # 7b)
+				Unew[i] = self.u_seq[i] + self.alpha*k[i] + np.dot(K[i], xnew - self.x_seq[i]) # 7b)
 				xnew += self.dynamics(xnew, Unew[i]) * self.dt
 				Xnew[i] = xnew
 				costnew += (self.cost_field.state_cost(xnew) + self.cost_field.effort_cost(Unew[i])) * self.dt
@@ -219,7 +227,9 @@ class Planner:
 					print("lambda > max_lambda at iteration = %d;"%ii + 
 						" Cost = %.4f; logLambda = %.1f"%(cost, 
 														  np.log(lamb)))
-					break
+					self.alpha /= self.alpha_factor
+					lamb /= self.lamb_factor
+					print("Trying with new alpha: {}".format(self.alpha))
 
 			if self.demo_plots:
 				self.ax.plot(self.x_seq[:, 0] , self.x_seq[:, 1], color=np.random.rand(3,1))
@@ -264,7 +274,8 @@ class Planner:
 			raise ValueError("Expected cost_field to be an instance of Cost_Field.")
 
 
-	def set_planning_params(self, planning_horizon=None, planning_resolution=None, max_iter=None, eps_converge=None):
+	def set_planning_params(self, planning_horizon=None, planning_resolution=None,
+							max_iter=None, eps_converge=None, alpha=None):
 		"""
 		Use for modifying the simulation duration and timestep used during planning,
 		and maximum number of allowable iterations for converging. Parameters not
@@ -283,6 +294,9 @@ class Planner:
 		if eps_converge is not None:
 			self.eps_converge = eps_converge
 
+		if alpha is not None:
+			self.alpha = alpha
+
 		self.t_seq = np.arange(0, self.T, self.dt)
 		self.N = len(self.t_seq)
 
@@ -292,6 +306,7 @@ class Planner:
 		self.get_state = lambda t: np.zeros(self.nstates)
 		self.get_effort = lambda t: np.zeros(self.ncontrols)
 
+		self.alpha_factor = 2
 		self.lamb_factor = 10
 		self.lamb_max = 1000
 
@@ -330,7 +345,7 @@ class Planner:
 			# Evaluate cost field
 			for i, xval in enumerate(X[:, 0]):
 				for j, yval in enumerate(Y[0, :]):
-					Jmap[i, j] = self.cost_field.state_cost([xval, yval, 0, 0])
+					Jmap[i, j] = self.cost_field.state_cost(np.concatenate(([xval, yval], np.zeros(int(self.nstates-2)))))
 					if Jmap[i, j] < 0:
 						print "Negative cost! At ({0}, {1})".format(xval, yval)
 			Jmap = Jmap[:-1, :-1]
