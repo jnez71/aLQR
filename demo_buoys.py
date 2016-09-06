@@ -22,7 +22,7 @@ def linearize(x):
 	A = np.array([
 				  [ 0, 0,         1,       0],
 				  [ 0, 0,         0,       1],
-				  [ 0, 0, -drag/1.5,       0],
+				  [ 0, 0, -drag/1,       0],
 				  [ 0, 0,         0,   -drag]
 				])
 	B = np.array([
@@ -85,8 +85,7 @@ c_history = np.zeros(len(t_arr))
 for i, t in enumerate(t_arr):
 
 	# Planner's decision
-	u = planner.u_seq[i, :]
-	# u = planner.get_effort(t)
+	u = planner.get_effort(t)
 
 	# Record this instant
 	x_history[i, :] = x

@@ -87,8 +87,7 @@ c_history = np.zeros(len(t_arr))
 for i, t in enumerate(t_arr):
 
 	# Planner's decision
-	u = planner.u_seq[i, :]
-	# u = planner.get_effort(t)
+	u = planner.get_effort(t)
 
 	# Record this instant
 	x_history[i, :] = x

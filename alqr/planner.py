@@ -6,6 +6,10 @@ The system must be linearizable, time-invarient, and control affine:
 xdot = f(x) + B(x)*u  with  jac(f)|x_i = A_i  such that
 xdot = A_i*x + B(x_i)*u  is accurate near x_i.
 
+After running Planner.update_plan, call Planner.get_effort(t)
+or Planner.get_state(t) to find the interpolated values of the
+plan at time t since the plan was created.
+
 """
 
 ################################################# DEPENDENCIES
@@ -13,6 +17,7 @@ xdot = A_i*x + B(x_i)*u  is accurate near x_i.
 from __future__ import division
 import numpy as np
 import numpy.linalg as npl
+from scipy.interpolate import interp1d
 from cost_field import Cost_Field
 
 ################################################# PRIMARY CLASS
@@ -222,28 +227,12 @@ class Planner:
 			graphic_robot = self.ax.add_patch(plt.Circle((x0[0], x0[1]), radius=0.02, fc='k'))
 			plt.show()
 
-		# ...and return if ya want it
+		# Create functions for interpolating the plan
+		self.get_state = interp1d(self.t_seq, self.x_seq, axis=0, bounds_error=True, assume_sorted=True)
+		self.get_effort = interp1d(self.t_seq, self.u_seq, axis=0, bounds_error=True, assume_sorted=True)
+
+		# ...and return if ya want the sequences themselves
 		return (self.x_seq, self.u_seq)
-
-
-	def get_effort(self, t):
-		"""
-		Returns the optimal effort at time t
-		within the last generated plan.
-
-		"""
-		#<<< linearly interp to find u at t in t_seq
-		pass
-
-
-	def get_state(self, t):
-		"""
-		Returns the expected state at time t
-		within the last generated plan.
-
-		"""
-		#<<< linearly interp to find x at t in t_seq
-		pass
 
 
 	def set_dynamics(self, dynamics, linearize):
@@ -299,6 +288,9 @@ class Planner:
 
 		self.x_seq = np.zeros((self.N, self.nstates))
 		self.u_seq = np.zeros((self.N, self.ncontrols))
+
+		self.get_state = lambda t: np.zeros(self.nstates)
+		self.get_effort = lambda t: np.zeros(self.ncontrols)
 
 		self.lamb_factor = 10
 		self.lamb_max = 1000
