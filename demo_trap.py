@@ -36,7 +36,7 @@ def dynamics(x, u):
 
 # Set up a cost field
 goal = [1, 1, 0, 0]
-cost_field = alqr.Cost_Field(nstates, ncontrols, goal,
+cost_field = alqr.Cost_Field(nstates, ncontrols, 2, goal,
 							 position_weight=2, velocity_weight=2,
 							 obstacle_weight=1, effort_weight=0.3)
 
