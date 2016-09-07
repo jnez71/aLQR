@@ -228,7 +228,7 @@ class Planner:
 						" Cost = %.4f; logLambda = %.1f"%(cost, 
 														  np.log(lamb)))
 					self.alpha /= self.alpha_factor
-					lamb /= self.lamb_factor
+					lamb /= 2*self.lamb_factor
 					print("Trying with new alpha: {}".format(self.alpha))
 
 			if self.demo_plots:
