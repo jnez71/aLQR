@@ -28,10 +28,9 @@ class Cost_Field:
 	ncontrols: the dimensionality of the effort space
 	nobstates: the dimensionality of "obstacles"
 	goal0: the initial goal state
-	position_weight: scalar in cost function (position_weight * position_error^2)
-	velocity_weight: scalar in cost function (velocity_weight * velocity_error^2)
+	goal_weight: array or scalar in cost function (goal_weight * goal_error^2)
+	effort_weight: array or scalar in cost function (effort_weight * effort^2)
 	obstacle_weight: scalar in cost function (obstacle_weight * obstacle_nearness^2)
-	effort_weight: scalar in cost function (effort_weight * effort^2)
 	umin and umax: arrays of minimum and maximum allowable actuator efforts (default: no limits)
 	strictness: scalar for how strict the effort limits are... don't be too strict or poor convergence
 	arb costs: functions that add onto the state and effort cost calculations (default: no added cost)
@@ -39,8 +38,7 @@ class Cost_Field:
 
 	"""
 	def __init__(self, nstates, ncontrols, nobstates, goal0,
-				 position_weight, velocity_weight,
-				 obstacle_weight, effort_weight,
+				 goal_weight, effort_weight, obstacle_weight,
 				 umin=None, umax=None, strictness=100,
 				 arb_state_cost=None, arb_effort_cost=None):
 		# Dimensionality
@@ -50,7 +48,7 @@ class Cost_Field:
 
 		# Get your goals in order and your priorities straight
 		self.set_goal(goal0)
-		self.set_weights(position_weight, velocity_weight, obstacle_weight, effort_weight)
+		self.set_weights(goal_weight, effort_weight, obstacle_weight)
 		self.reset_obstacles()
 
 		# Initialize and then set limits
@@ -95,7 +93,7 @@ class Cost_Field:
 
 		"""
 		# Upwards quadratic, centered at zero effort
-		c = self.effort_weight * u.dot(u)
+		c = (self.effort_weight * u).dot(u)
 		# Quadratically increase cost for leaving effort bounds
 		for i, eff in enumerate(u):
 			if eff >= self.umax[i]:
@@ -185,40 +183,34 @@ class Cost_Field:
 			raise ValueError("The goal must be a state vector (with nstates elements).")
 
 
-	def set_weights(self, position_weight=None, velocity_weight=None, obstacle_weight=None, effort_weight=None):
+	def set_weights(self, goal_weight=None, effort_weight=None, obstacle_weight=None):
 		"""
-		Use to modify the scalar weights for the various influences on behavior.
+		Use to modify the weights for the various influences on behavior.
+		The weight for obstacles must be a scalar, but the state and effort weights can be an array or scalar.
 		Weights that aren't given aren't changed.
 
 		"""
-		if position_weight is not None:
-			if type(position_weight) in [int, float]:
-				self.position_weight = float(position_weight)
+		if goal_weight is not None:
+			if type(goal_weight) in [int, float]:
+				self.goal_weight = float(goal_weight) * np.ones(self.nstates)
+			elif len(goal_weight) == self.nstates:
+				self.goal_weight = np.array(goal_weight, dtype=np.float64)
 			else:
-				raise ValueError("The position_weight must be a scalar.")
+				raise ValueError("The goal_weight must be a scalar or array of length nstates.")
 
-		if velocity_weight is not None:
-			if type(velocity_weight) in [int, float]:
-				self.velocity_weight = float(velocity_weight)
+		if effort_weight is not None:
+			if type(effort_weight) in [int, float]:
+				self.effort_weight = float(effort_weight) * np.ones(self.ncontrols)
+			elif len(effort_weight) == self.ncontrols:
+				self.effort_weight = np.array(effort_weight, dtype=np.float64)
 			else:
-				raise ValueError("The velocity_weight must be a scalar.")
-
-		self.goal_weight = np.concatenate((
-										   self.position_weight * np.ones(int(self.nstates/2)),
-										   self.velocity_weight * np.ones(int(self.nstates/2))
-										 ))
+				raise ValueError("The effort_weight must be a scalar or array of length ncontrols.")
 
 		if obstacle_weight is not None:
 			if type(obstacle_weight) in [int, float]:
 				self.obstacle_weight = float(obstacle_weight)
 			else:
 				raise ValueError("The obstacle_weight must be a scalar.")
-
-		if effort_weight is not None:
-			if type(effort_weight) in [int, float]:
-				self.effort_weight = float(effort_weight)
-			else:
-				raise ValueError("The effort_weight must be a scalar")
 
 
 	def set_constraints(self, umin=None, umax=None, strictness=None):

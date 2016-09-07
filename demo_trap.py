@@ -37,8 +37,7 @@ def dynamics(x, u):
 # Set up a cost field
 goal = [1, 1, 0, 0]
 cost_field = alqr.Cost_Field(nstates, ncontrols, 2, goal,
-							 position_weight=2, velocity_weight=2,
-							 obstacle_weight=1, effort_weight=0.3)
+							 goal_weight=2, effort_weight=0.3, obstacle_weight=1)
 
 # Non-convex "trap" of obstacles
 cost_field.add_obstacle('corner', [0.7, 0.7], 0.2)
@@ -64,7 +63,7 @@ cost_field.add_obstacle('down6', [0.7, 0.4], 0.2)
 
 # Associate an alqr planner
 planning_horizon = 10  # s
-planning_resolution = 0.01  # s
+planning_resolution = 0.03  # s
 planner = alqr.Planner(dynamics, linearize, cost_field,
 					   planning_horizon, planning_resolution,
 					   demo_plots=True)

@@ -113,11 +113,20 @@ def linearize(x):
 
 ################################################# SIMULATION
 
+# Initial condition and time
+x = [0, 0, np.deg2rad(0), 0, 0, 0]
+dt = 0.01  # s
+T = 20  # s
+t_arr = np.arange(0, T, dt)
+framerate = 30
+show_cost_field = True
+
+
 # Set up a cost field
 goal = [1, 1, np.deg2rad(-90), 0, 0, 0]
 cost_field = alqr.Cost_Field(nstates, ncontrols, 2, goal,
-							 position_weight=400, velocity_weight=500,
-							 obstacle_weight=100, effort_weight=1)
+							 goal_weight=[400, 400, 0, 400, 400, 400],
+							 effort_weight=[0.05, 0.05, 0.05], obstacle_weight=400)
 
 # Noised grid of obstacles
 obs_grid_x, obs_grid_y = np.mgrid[slice(0.3, 0.8+0.2, 0.2), slice(0, 1+0.2, 0.2)]
@@ -127,31 +136,33 @@ obs = [np.zeros(2)] * obs_grid_x.size
 for i in range(len(obs)):
 	obs[i] = np.round([obs_grid_x[i], obs_grid_y[i]] + 0.07*(np.random.rand(2)-0.5), 2)
 	name = 'buoy' + str(i)
-	if npl.norm(obs[i] - goal[:2]) > 0.1:
+	if npl.norm(obs[i] - goal[:2]) > 0.2:
 		cost_field.add_obstacle(name, obs[i], 0.1)
 
-# # Additional cost function to impose staying pointed at the goal
+# # Cost function to impose staying pointed at the goal
+# dist0 = npl.norm(goal[:2] - np.array(x[:2], dtype=np.float64))
 # def heading_cost(x):
-# 	to_goal = goal[:2] - np.array(x[:2], dtype=np.float64)
-# 	progress_heading = np.arctan2(to_goal[1], to_goal[0])
-# 	return 1000 * npl.norm(to_goal) * (progress_heading - x[2])**2
+# 	# vector to goal
+# 	progressive = goal[:2] - np.array(x[:2], dtype=np.float64)
+# 	# heading along vector to goal
+# 	progressive_heading = np.arctan2(progressive[1], progressive[0])
+# 	# progressive heading error
+# 	prog_err = (progressive_heading - x[2])
+# 	# actual heading error
+# 	act_err = (goal[2] - x[2])
+# 	# distance from goal
+# 	dist = npl.norm(progressive)
+# 	# heading cost
+# 	return 400 * (50*dist/dist0 * prog_err**2 + (1 - dist/dist0) * act_err**2)
 # cost_field.set_arb_costs(arb_state_cost=heading_cost)
 
 
 # Associate an alqr planner
-planning_horizon = 20  # s
-planning_resolution = 0.01  # s
+planning_horizon = T  # s
+planning_resolution = dt  # s
 planner = alqr.Planner(dynamics, linearize, cost_field,
 					   planning_horizon, planning_resolution,
 					   eps_converge=0.001, demo_plots=True)
-
-
-# Initial condition and time
-x = [0, 0, np.deg2rad(0), 0, 0, 0]
-dt = planning_resolution  # convenient to use in sim testing too
-t_arr = np.arange(0, planning_horizon, dt)
-framerate = 30
-show_cost_field = True
 
 # Plan a path from these initial conditions
 planner.update_plan(x)

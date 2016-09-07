@@ -42,8 +42,7 @@ def dynamics(x, u):
 # Set up a cost field
 goal = [1, 1, 0, 0]
 cost_field = alqr.Cost_Field(nstates, ncontrols, 2, goal,
-							 position_weight=2, velocity_weight=2,
-							 obstacle_weight=1, effort_weight=0.3)
+							 goal_weight=2, effort_weight=0.3, obstacle_weight=1)
 
 # Noised grid of obstacles
 obs_grid_x, obs_grid_y = np.mgrid[slice(0.3, 1+0.2, 0.2), slice(0.3, 1+0.2, 0.2)]
@@ -53,7 +52,8 @@ obs = [np.zeros(2)] * obs_grid_x.size
 for i in range(len(obs)):
 	obs[i] = np.round([obs_grid_x[i], obs_grid_y[i]] + 0.1*(np.random.rand(2)-0.5), 2)
 	name = 'buoy' + str(i)
-	cost_field.add_obstacle(name, obs[i], 0.1)
+	if npl.norm(obs[i] - goal[:2]) > 0.1:
+		cost_field.add_obstacle(name, obs[i], 0.1)
 
 
 # Associate an alqr planner
